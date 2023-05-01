@@ -3,47 +3,38 @@ package main
 import (
 	"fmt"
 
-	"github.com/kafelix496/learn-go/dictionary"
+	"github.com/kafelix496/learn-go/url_checker"
 )
 
 func main() {
-	dict := dictionary.Dictionary{}
-
-	addError := dict.Add("my", "word")
-	if addError != nil {
-		fmt.Println("add error", addError)
+	results := make(map[string]string)
+	c := make(chan url_checker.UrlResult)
+	urls := []string{
+		"https://www.google.com",
+		"https://www.facebook.com",
+		"https://www.twitter.com",
+		"https://www.instagram.com",
+		"https://www.youtube.com",
+		"https://www.linkedin.com",
+		"https://www.github.com",
+		"https://www.medium.com",
+		"https://www.reddit.com",
+		"https://www.stackoverflow.com",
+		"https://www.wikipedia.org",
+		"https://www.quora.com",
+		"https://www.pinterest.com",
 	}
 
-	def, searchError := dict.Search("my")
-	if searchError != nil {
-		fmt.Println("search error 1", searchError)
-	} else {
-		fmt.Println("search result 1", def)
+	for _, url := range urls {
+		go url_checker.HitUrl(url, c)
 	}
 
-	def2, searchError2 := dict.Search("my2")
-	if searchError2 != nil {
-		fmt.Println("search error 2", searchError2)
-	} else {
-		fmt.Println("search result 2", def2)
+	for i := 0; i < len(urls); i++ {
+		result := <-c
+		results[result.Url] = result.Status
 	}
 
-	searchError3 := dict.Update("my", "new word")
-	if searchError3 != nil {
-		fmt.Println("search error 3", searchError)
-	}
-
-	searchError4 := dict.Update("my2", "new word")
-	if searchError4 != nil {
-		fmt.Println("search error 4", searchError4)
-	}
-
-	dict.Delete("my")
-
-	def3, searchError5 := dict.Search("my")
-	if searchError5 != nil {
-		fmt.Println("search error 5", searchError5)
-	} else {
-		fmt.Println("search result 5", def3)
+	for url, status := range results {
+		fmt.Println(url, status)
 	}
 }
