@@ -1,40 +1,31 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/kafelix496/learn-go/url_checker"
+	"github.com/kafelix496/learn-go/web_scrapper"
 )
 
+type extractedJob struct {
+	title    string
+	location string
+}
+
+var baseURL = "https://www.saramin.co.kr/zf_user/search/recruit?&searchword=python"
+
 func main() {
-	results := make(map[string]string)
-	c := make(chan url_checker.UrlResult)
-	urls := []string{
-		"https://www.google.com",
-		"https://www.facebook.com",
-		"https://www.twitter.com",
-		"https://www.instagram.com",
-		"https://www.youtube.com",
-		"https://www.linkedin.com",
-		"https://www.github.com",
-		"https://www.medium.com",
-		"https://www.reddit.com",
-		"https://www.stackoverflow.com",
-		"https://www.wikipedia.org",
-		"https://www.quora.com",
-		"https://www.pinterest.com",
+	totalPageCount := web_scrapper.GetPagesCount(baseURL)
+	var jobs []web_scrapper.ExtractedJob
+	c := make(chan []web_scrapper.ExtractedJob)
+
+	for i := 0; i < totalPageCount; i++ {
+		pageUrl := web_scrapper.GetTargetPageUrl(baseURL, i)
+
+		go web_scrapper.GetPage(pageUrl, c)
 	}
 
-	for _, url := range urls {
-		go url_checker.HitUrl(url, c)
+	for i := 0; i < totalPageCount; i++ {
+		job := <-c
+		jobs = append(jobs, job...)
 	}
 
-	for i := 0; i < len(urls); i++ {
-		result := <-c
-		results[result.Url] = result.Status
-	}
-
-	for url, status := range results {
-		fmt.Println(url, status)
-	}
+	web_scrapper.WriteJobs(jobs)
 }
